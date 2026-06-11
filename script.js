@@ -151,6 +151,7 @@ function analyze() {
     score,
     matched,
     missing,
+    jdKeywords,
     categoryResults,
     role,
     roleMatches,
@@ -196,6 +197,63 @@ function riskForScore(score) {
   };
 }
 
+function riskDistribution(score) {
+  const high = Math.max(8, 78 - score);
+  const medium = Math.max(12, 52 - Math.abs(score - 62) * 0.55);
+  const low = Math.max(8, score - 42);
+  const total = high + medium + low;
+  return {
+    high: (high / total) * 100,
+    medium: (medium / total) * 100,
+    low: (low / total) * 100
+  };
+}
+
+function getMissingSkills(data) {
+  const knownSkills = uniqueByNormalized(Object.values(SKILL_CATEGORIES).flat());
+  return data.missing
+    .filter((keyword) => knownSkills.some((skill) => normalize(skill) === normalize(keyword)))
+    .sort((a, b) => {
+      const aRole = data.role.role.keywords.some((item) => normalize(item) === normalize(a)) ? 1 : 0;
+      const bRole = data.role.role.keywords.some((item) => normalize(item) === normalize(b)) ? 1 : 0;
+      return bRole - aRole;
+    })
+    .slice(0, 6);
+}
+
+function getTopMissingKeywords(data, missingSkills) {
+  const skillSet = new Set(missingSkills.map(normalize));
+  const nonSkills = data.missing.filter((keyword) => !skillSet.has(normalize(keyword)));
+  return uniqueByNormalized([...nonSkills, ...data.missing]).slice(0, 6);
+}
+
+function buildResumeRisks(data, risk) {
+  const risks = [];
+  const uncoveredCategories = data.categoryResults
+    .filter((category) => category.relevantSkills.length && !category.matchedSkills.length)
+    .map((category) => category.name);
+
+  if (data.missing.length >= data.matched.length) {
+    risks.push("Too many important JD terms lack direct resume evidence.");
+  }
+  if (uncoveredCategories.length) {
+    risks.push(`No clear evidence found for ${uncoveredCategories.slice(0, 2).join(" and ")}.`);
+  }
+  if (data.roleMatches.length < Math.ceil(data.role.role.keywords.length * 0.4)) {
+    risks.push(`The resume does not yet signal a clear ${data.role.role.name} profile.`);
+  }
+  if (!/\d+%|\d+\+|\$\d+|\d+\s*(users|customers|projects|hours|days|weeks|months|years)/i.test(resumeInput.value)) {
+    risks.push("Achievements lack measurable outcomes or evidence of impact.");
+  }
+  if (!/summary|profile|objective/i.test(resumeInput.value)) {
+    risks.push("The target role is not reinforced through a focused summary.");
+  }
+  if (!risks.length || risk.className === "low") {
+    risks.push("Strong alignment still depends on ATS-friendly formatting and truthful evidence.");
+  }
+  return risks.slice(0, 4);
+}
+
 function buildNotes(data) {
   const topMissing = data.missing.slice(0, 5);
   const weakCategories = data.categoryResults
@@ -231,30 +289,27 @@ function buildNotes(data) {
 
 function renderResults(data) {
   const risk = riskForScore(data.score);
+  const distribution = riskDistribution(data.score);
+  const missingSkills = getMissingSkills(data);
+  const topMissingKeywords = getTopMissingKeywords(data, missingSkills);
+  const resumeRisks = buildResumeRisks(data, risk);
   results.hidden = false;
 
-  document.querySelector("#match-score").textContent = data.score;
-  const ring = document.querySelector("#score-ring");
-  ring.style.setProperty("--score", `${data.score}%`);
-  ring.style.setProperty("--ring-color", risk.color);
-
-  document.querySelector("#score-message").textContent =
-    data.score >= 75 ? "Strong target alignment" : data.score >= 50 ? "Promising, with clear gaps" : "Significant tailoring needed";
-  document.querySelector("#score-description").textContent =
-    `${data.matched.length} JD keywords matched. The result uses keyword, category, and target-role evidence.`;
-
-  const riskCard = document.querySelector("#risk-card");
-  riskCard.className = `risk-card ${risk.className}`;
+  const pie = document.querySelector("#risk-pie");
+  pie.style.setProperty("--high-risk", `${distribution.high}%`);
+  pie.style.setProperty("--medium-risk", `${distribution.high + distribution.medium}%`);
   document.querySelector("#risk-label").textContent = risk.level;
+  document.querySelector("#risk-message").textContent =
+    data.score >= 75 ? "Strong target alignment" : data.score >= 50 ? "Promising, with clear gaps" : "Significant tailoring needed";
   document.querySelector("#risk-description").textContent = risk.message;
 
-  setMetric("#keyword-points", "#keyword-bar", data.keywordPoints, 50);
-  setMetric("#skill-points", "#skill-bar", data.skillPoints, 30);
-  setMetric("#role-points", "#role-bar", data.rolePoints, 20);
+  renderPriorityList("#top-missing-skills", missingSkills, "No major role-specific skill gaps detected.");
+  renderPriorityList("#top-missing-keywords", topMissingKeywords, "No major keyword gaps detected.");
+  const riskList = document.querySelector("#top-resume-risks");
+  riskList.innerHTML = "";
+  resumeRisks.forEach((item) => riskList.insertAdjacentHTML("beforeend", `<li><span>${item}</span></li>`));
 
   document.querySelector("#detected-role").textContent = `Analysis template: ${data.role.role.name}`;
-  document.querySelector("#matched-count").textContent = data.matched.length;
-  document.querySelector("#missing-count").textContent = data.missing.length;
   renderTags("#matched-keywords", data.matched, "matched", "No JD keywords matched yet.");
   renderTags("#missing-keywords", data.missing, "missing", "No major keyword gaps detected.");
 
@@ -263,8 +318,12 @@ function renderResults(data) {
   data.categoryResults.forEach((category) => {
     const rate = category.rate === null ? 0 : Math.round(category.rate * 100);
     const detail = category.relevantSkills.length
-      ? `${category.matchedSkills.length}/${category.relevantSkills.length} relevant skills`
-      : "No role-specific skills detected";
+      ? category.matchedSkills.length === category.relevantSkills.length
+        ? "Strong evidence"
+        : category.matchedSkills.length
+          ? "Partial evidence"
+          : "Evidence missing"
+      : "Not emphasized by this role";
     categoryList.insertAdjacentHTML("beforeend", `
       <div class="category-item">
         <div><span>${category.name}</span><small>${detail}</small></div>
@@ -284,10 +343,19 @@ function renderResults(data) {
   results.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function setMetric(labelSelector, barSelector, value, max) {
-  const rounded = Math.round(value);
-  document.querySelector(labelSelector).textContent = `${rounded} / ${max}`;
-  document.querySelector(barSelector).style.width = `${(value / max) * 100}%`;
+function renderPriorityList(selector, items, emptyMessage) {
+  const container = document.querySelector(selector);
+  container.innerHTML = "";
+  if (!items.length) {
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    return;
+  }
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "priority-item";
+    row.textContent = item;
+    container.appendChild(row);
+  });
 }
 
 async function readPdf(file) {

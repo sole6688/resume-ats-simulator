@@ -30,9 +30,9 @@
         <p>Compare a resume against a job description, uncover missing keywords, and turn the result into practical revision advice.</p>
       </div>
       <div class="hero-stat">
-        <span>Scoring model</span>
-        <strong>50 / 30 / 20</strong>
-        <small>Keywords · Skill coverage · Role fit</small>
+        <span>Risk-based analysis</span>
+        <strong>3 priorities</strong>
+        <small>Skills · Keywords · Resume risks</small>
       </div>
     </section>
 
@@ -115,45 +115,44 @@
       </div>
 
       <div class="summary-grid">
-        <article class="score-card">
-          <div class="score-ring" id="score-ring">
-            <div class="score-center">
-              <strong id="match-score">0</strong>
-              <span>/ 100</span>
+        <article class="risk-overview-card">
+          <div class="risk-pie" id="risk-pie">
+            <div class="risk-pie-center">
+              <small>Overall screening risk</small>
+              <strong id="risk-label">Risk</strong>
             </div>
           </div>
-          <div class="score-copy">
-            <p class="eyebrow">ATS Match Score</p>
-            <h3 id="score-message">Analysis complete</h3>
-            <p id="score-description"></p>
+          <div class="risk-overview-copy">
+            <p class="eyebrow">Risk profile</p>
+            <h3 id="risk-message">Analysis complete</h3>
+            <p id="risk-description"></p>
+            <div class="risk-legend">
+              <span><i class="legend-high"></i>High Risk</span>
+              <span><i class="legend-medium"></i>Medium Risk</span>
+              <span><i class="legend-low"></i>Low Risk</span>
+            </div>
           </div>
         </article>
 
-        <article class="risk-card" id="risk-card">
-          <div class="risk-top">
-            <span class="risk-icon">!</span>
-            <span id="risk-label">Risk</span>
-          </div>
-          <p id="risk-description"></p>
-          <div class="risk-scale" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
+        <article class="result-card priority-card skills-priority-card">
+          <p class="eyebrow">Priority 01</p>
+          <h3>Top Missing Skills</h3>
+          <p class="priority-intro">Role-specific capabilities that need stronger evidence.</p>
+          <div id="top-missing-skills" class="priority-list"></div>
         </article>
 
-        <article class="breakdown-card">
-          <p class="eyebrow">Score breakdown</p>
-          <div class="metric">
-            <div><span>JD keywords</span><strong id="keyword-points">0 / 50</strong></div>
-            <div class="metric-track"><span id="keyword-bar"></span></div>
-          </div>
-          <div class="metric">
-            <div><span>Skill coverage</span><strong id="skill-points">0 / 30</strong></div>
-            <div class="metric-track"><span id="skill-bar"></span></div>
-          </div>
-          <div class="metric">
-            <div><span>Role template fit</span><strong id="role-points">0 / 20</strong></div>
-            <div class="metric-track"><span id="role-bar"></span></div>
-          </div>
+        <article class="result-card priority-card keywords-priority-card">
+          <p class="eyebrow">Priority 02</p>
+          <h3>Top Missing Keywords</h3>
+          <p class="priority-intro">Important JD language not currently reflected in the resume.</p>
+          <div id="top-missing-keywords" class="priority-list"></div>
+        </article>
+
+        <article class="result-card priority-card risks-priority-card">
+          <p class="eyebrow">Priority 03</p>
+          <h3>Top Resume Risks</h3>
+          <p class="priority-intro">The most likely reasons this resume may not pass screening.</p>
+          <ol id="top-resume-risks" class="risk-list"></ol>
         </article>
       </div>
 
@@ -164,7 +163,6 @@
               <p class="eyebrow">Keyword coverage</p>
               <h3>Matched keywords</h3>
             </div>
-            <span class="count green-count" id="matched-count">0</span>
           </div>
           <div id="matched-keywords" class="tag-list"></div>
         </article>
@@ -172,10 +170,9 @@
         <article class="result-card keywords-card missing-card">
           <div class="card-title-row">
             <div>
-              <p class="eyebrow">Priority gaps</p>
-              <h3>Missing keywords</h3>
+              <p class="eyebrow">All identified gaps</p>
+              <h3>Complete missing keyword list</h3>
             </div>
-            <span class="count red-count" id="missing-count">0</span>
           </div>
           <div id="missing-keywords" class="tag-list"></div>
         </article>

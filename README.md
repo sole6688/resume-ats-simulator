@@ -9,10 +9,9 @@ A privacy-friendly, front-end resume screening simulator for career consultants.
 - Paste resume and job-description text directly
 - Import text-based PDFs in the browser
 - Recognize text in resume photos or scanned documents with browser-based OCR
-- Calculate a 0–100 match score:
-  - JD keyword hit rate: 50%
-  - Skill category coverage: 30%
-  - Target role template fit: 20%
+- Show a High, Medium, or Low screening-risk profile as a proportional pie chart
+- Use an internal weighted model based on JD keywords, skill coverage, and target-role fit without displaying a numeric score
+- Prioritize Top Missing Skills, Top Missing Keywords, and Top Resume Risks
 - Show matched and missing keywords
 - Group evidence into programming languages, tools/platforms, technical skills, domain skills, and soft skills
 - Classify screening risk and generate consultant notes
@@ -27,7 +26,7 @@ A privacy-friendly, front-end resume screening simulator for career consultants.
 3. Paste the complete job description.
 4. Select a target role or leave the selector on **Auto-detect best match**.
 5. Click **Analyze Match**.
-6. Review the score, missing keywords, skill coverage, risk, and consultant notes.
+6. Review the risk profile, top missing skills, top missing keywords, resume risks, and consultant notes.
 
 PDF parsing and image OCR happen locally in the browser. The document is not uploaded. The project loads PDF.js, Tesseract.js, and web fonts from public CDNs, so those features require an internet connection on first use. Text-based PDFs produce the best results; image quality affects OCR accuracy.
 
