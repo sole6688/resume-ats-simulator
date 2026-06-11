@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A privacy-friendly, browser-based resume ATS match simulator for career consultants.">
+  <title>Resume ATS Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Resume ATS Simulator home">
+      <span class="brand-mark">A</span>
+      <span>Resume ATS Simulator</span>
+    </a>
+    <div class="privacy-pill">
+      <span class="status-dot"></span>
+      Private · Runs in your browser
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Career consultant toolkit</p>
+        <h1>See your resume through an <span>ATS lens.</span></h1>
+        <p>Compare a resume against a job description, uncover missing keywords, and turn the result into practical revision advice.</p>
+      </div>
+      <div class="hero-stat">
+        <span>Scoring model</span>
+        <strong>50 / 30 / 20</strong>
+        <small>Keywords · Skill coverage · Role fit</small>
+      </div>
+    </section>
+
+    <section class="workspace-card" aria-labelledby="workspace-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Step 1</p>
+          <h2 id="workspace-title">Add your documents</h2>
+        </div>
+        <button class="text-button" id="load-demo" type="button">Load demo content</button>
+      </div>
+
+      <div class="role-row">
+        <label for="role-template">Target role template</label>
+        <select id="role-template">
+          <option value="auto">Auto-detect best match</option>
+          <option value="sde">SDE / Software Engineer</option>
+          <option value="dataAnalyst">Data Analyst</option>
+          <option value="dataScientist">Data Scientist</option>
+          <option value="rtl">RTL / FPGA Engineer</option>
+          <option value="verification">Design Verification Engineer</option>
+          <option value="embedded">Embedded / Firmware Engineer</option>
+        </select>
+        <span id="detected-role" class="detected-role">Role will be detected after analysis</span>
+      </div>
+
+      <div class="input-grid">
+        <article class="input-panel">
+          <div class="input-title">
+            <div>
+              <span class="panel-number">01</span>
+              <h3>Resume Text</h3>
+            </div>
+            <span class="required">Required</span>
+          </div>
+          <textarea id="resume-text" placeholder="Paste resume text here, or import a PDF / image below..." aria-label="Resume text"></textarea>
+          <div class="upload-row">
+            <label class="upload-button" for="resume-file">
+              <span>↑</span> Import PDF or image
+            </label>
+            <input id="resume-file" type="file" accept=".pdf,image/*" hidden>
+            <span id="file-status" class="file-status">Processed locally</span>
+          </div>
+          <div id="ocr-progress" class="progress-wrap" hidden>
+            <div class="progress-track"><span id="ocr-progress-bar"></span></div>
+            <small id="ocr-progress-text">Reading file...</small>
+          </div>
+        </article>
+
+        <article class="input-panel">
+          <div class="input-title">
+            <div>
+              <span class="panel-number">02</span>
+              <h3>Job Description</h3>
+            </div>
+            <span class="required">Required</span>
+          </div>
+          <textarea id="jd-text" placeholder="Paste the complete job description here..." aria-label="Job description text"></textarea>
+          <div class="input-footer">
+            <span>Tip: include responsibilities and qualifications</span>
+            <span id="jd-word-count">0 words</span>
+          </div>
+        </article>
+      </div>
+
+      <div id="input-error" class="input-error" role="alert" hidden>Please add both a resume and a job description before analyzing.</div>
+      <button id="analyze-button" class="analyze-button" type="button">
+        <span>Analyze Match</span>
+        <span aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <section id="results" class="results-section" aria-labelledby="results-title" hidden>
+      <div class="section-heading result-heading">
+        <div>
+          <p class="eyebrow">Step 2</p>
+          <h2 id="results-title">ATS analysis</h2>
+        </div>
+        <button id="print-report" class="secondary-button" type="button">Print report</button>
+      </div>
+
+      <div class="summary-grid">
+        <article class="score-card">
+          <div class="score-ring" id="score-ring">
+            <div class="score-center">
+              <strong id="match-score">0</strong>
+              <span>/ 100</span>
+            </div>
+          </div>
+          <div class="score-copy">
+            <p class="eyebrow">ATS Match Score</p>
+            <h3 id="score-message">Analysis complete</h3>
+            <p id="score-description"></p>
+          </div>
+        </article>
+
+        <article class="risk-card" id="risk-card">
+          <div class="risk-top">
+            <span class="risk-icon">!</span>
+            <span id="risk-label">Risk</span>
+          </div>
+          <p id="risk-description"></p>
+          <div class="risk-scale" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </article>
+
+        <article class="breakdown-card">
+          <p class="eyebrow">Score breakdown</p>
+          <div class="metric">
+            <div><span>JD keywords</span><strong id="keyword-points">0 / 50</strong></div>
+            <div class="metric-track"><span id="keyword-bar"></span></div>
+          </div>
+          <div class="metric">
+            <div><span>Skill coverage</span><strong id="skill-points">0 / 30</strong></div>
+            <div class="metric-track"><span id="skill-bar"></span></div>
+          </div>
+          <div class="metric">
+            <div><span>Role template fit</span><strong id="role-points">0 / 20</strong></div>
+            <div class="metric-track"><span id="role-bar"></span></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="result-grid">
+        <article class="result-card keywords-card">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Keyword coverage</p>
+              <h3>Matched keywords</h3>
+            </div>
+            <span class="count green-count" id="matched-count">0</span>
+          </div>
+          <div id="matched-keywords" class="tag-list"></div>
+        </article>
+
+        <article class="result-card keywords-card missing-card">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Priority gaps</p>
+              <h3>Missing keywords</h3>
+            </div>
+            <span class="count red-count" id="missing-count">0</span>
+          </div>
+          <div id="missing-keywords" class="tag-list"></div>
+        </article>
+      </div>
+
+      <div class="result-grid lower-grid">
+        <article class="result-card">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Evidence map</p>
+              <h3>Skill categories</h3>
+            </div>
+          </div>
+          <div id="skill-categories" class="category-list"></div>
+        </article>
+
+        <article class="result-card notes-card">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Consultant perspective</p>
+              <h3>Recommended next moves</h3>
+            </div>
+          </div>
+          <ol id="consultant-notes" class="notes-list"></ol>
+        </article>
+      </div>
+
+      <div class="disclaimer">
+        <strong>Important:</strong> This simulator is an educational coaching tool, not a replacement for a real ATS. It helps explain how keyword alignment and role-specific evidence can affect screening outcomes.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Resume ATS Simulator</span>
+    <span>Built for better career conversations.</span>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
